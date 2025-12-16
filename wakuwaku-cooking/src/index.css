@@ -1,0 +1,147 @@
+/* Google Fonts - 丸ゴシック */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* わくわくクッキング - カスタムスタイル */
+
+/* カスタムプロパティ */
+:root {
+  /* メインカラー（暖かい・食欲をそそる色） */
+  --primary-orange: #FF8C42;
+  --primary-yellow: #FFD166;
+  --primary-red: #EF476F;
+
+  /* 背景色（目に優しい淡い色） */
+  --bg-cream: #FFF8E7;
+  --bg-mint: #E8F5E9;
+  --bg-sky: #E3F2FD;
+
+  /* アクセントカラー */
+  --accent-green: #06D6A0;
+  --accent-blue: #118AB2;
+
+  /* テキスト */
+  --text-dark: #2D3436;
+  --text-brown: #5D4037;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'M PLUS Rounded 1c', 'Hiragino Kaku Gothic Pro', 'メイリオ', Meiryo, sans-serif;
+  touch-action: manipulation;
+  background: linear-gradient(135deg, #FFE5B4 0%, #FFCBA4 100%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ボタンのタッチエリア確保（最小48px） */
+button {
+  min-width: 48px;
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+/* アニメーション */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes sparkle {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes celebrate {
+  0% { transform: scale(0) rotate(-10deg); }
+  50% { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes starPop {
+  0% { transform: scale(0) rotate(-180deg); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); }
+}
+
+@keyframes bubblePop {
+  0% { transform: translateX(-50%) scale(0); }
+  50% { transform: translateX(-50%) scale(1.1); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* タッチフィードバック */
+.touch-feedback {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,215,0,0) 70%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: touchFade 0.5s ease-out forwards;
+}
+
+@keyframes touchFade {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* キラキラエフェクト */
+.sparkle-effect {
+  position: absolute;
+  pointer-events: none;
+  animation: sparkle 0.6s ease-out forwards;
+}
+
+/* 紙吹雪 */
+.confetti-piece {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  top: -20px;
+  animation: fall linear forwards;
+}
