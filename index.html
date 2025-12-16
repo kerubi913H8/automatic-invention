@@ -43,7 +43,10 @@
             <div class="screen-header">
                 <button class="back-button" onclick="game.showScreen('title-screen')">←</button>
                 <h2>なにをつくる？</h2>
-                <div class="stars-display">⭐ <span id="total-stars">0</span></div>
+                <div class="header-buttons">
+                    <button class="album-button" onclick="game.showScreen('album-screen')" title="アルバム">📸</button>
+                    <div class="stars-display">⭐ <span id="total-stars">0</span></div>
+                </div>
             </div>
             <div class="recipe-grid" id="recipe-grid">
                 <!-- JavaScriptで動的に生成 -->
@@ -64,6 +67,12 @@
                 <div class="instruction-bubble" id="instruction-bubble">
                     <span id="instruction-text">たまごをタップしてわろう！</span>
                 </div>
+                <!-- クッキーくまキャラクター -->
+                <div class="cookie-bear" id="cookie-bear">
+                    <div class="bear-face">🐻</div>
+                    <div class="bear-expression" id="bear-expression">😊</div>
+                    <div class="bear-speech" id="bear-speech"></div>
+                </div>
             </div>
             <div class="tool-bar" id="tool-bar">
                 <!-- 道具がここに表示される -->
@@ -81,12 +90,31 @@
                     <span class="star">⭐</span>
                 </div>
                 <div class="complete-message" id="complete-message">すごい！じょうずにできたね！</div>
+                <!-- クッキーくまのリアクション -->
+                <div class="bear-reaction" id="bear-reaction">
+                    <div class="bear-big">🐻</div>
+                    <div class="bear-reaction-text" id="bear-reaction-text">さいこうにおいしい！</div>
+                </div>
                 <div class="complete-buttons">
                     <button class="play-again-button" onclick="game.playAgain()">もういちど</button>
                     <button class="menu-button" onclick="game.showScreen('menu-screen')">べつのりょうり</button>
                 </div>
             </div>
             <div class="confetti" id="confetti"></div>
+        </div>
+
+        <!-- アルバム画面 -->
+        <div id="album-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="game.showScreen('menu-screen')">←</button>
+                <h2>りょうりアルバム 📸</h2>
+                <div class="album-count">
+                    <span id="album-count">0</span> まい
+                </div>
+            </div>
+            <div class="album-grid" id="album-grid">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
         </div>
     </div>
 
