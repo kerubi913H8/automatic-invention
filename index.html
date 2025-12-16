@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>わくわくキッチン！🍳 - キッズ料理ゲーム</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- タイトル画面 -->
+        <div id="title-screen" class="screen active">
+            <div class="title-content">
+                <h1 class="game-title">
+                    <span class="title-char" style="--delay: 0">わ</span>
+                    <span class="title-char" style="--delay: 1">く</span>
+                    <span class="title-char" style="--delay: 2">わ</span>
+                    <span class="title-char" style="--delay: 3">く</span>
+                    <span class="title-char" style="--delay: 4">キ</span>
+                    <span class="title-char" style="--delay: 5">ッ</span>
+                    <span class="title-char" style="--delay: 6">チ</span>
+                    <span class="title-char" style="--delay: 7">ン</span>
+                    <span class="title-char" style="--delay: 8">！</span>
+                </h1>
+                <div class="chef-character" id="main-chef">
+                    <div class="chef-hat">👨‍🍳</div>
+                </div>
+                <button class="start-button" onclick="game.startGame()">
+                    <span>あそぶ！</span>
+                </button>
+                <div class="floating-foods">
+                    <span class="food-icon" style="--x: 10%; --y: 20%; --delay: 0">🍳</span>
+                    <span class="food-icon" style="--x: 85%; --y: 15%; --delay: 1">🥞</span>
+                    <span class="food-icon" style="--x: 15%; --y: 70%; --delay: 2">🍛</span>
+                    <span class="food-icon" style="--x: 80%; --y: 75%; --delay: 3">🍰</span>
+                    <span class="food-icon" style="--x: 50%; --y: 10%; --delay: 4">🍔</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 料理選択画面 -->
+        <div id="menu-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="game.showScreen('title-screen')">←</button>
+                <h2>なにをつくる？</h2>
+                <div class="stars-display">⭐ <span id="total-stars">0</span></div>
+            </div>
+            <div class="recipe-grid" id="recipe-grid">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
+        </div>
+
+        <!-- 調理画面 -->
+        <div id="cooking-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="game.confirmExit()">←</button>
+                <h2 id="cooking-title">オムライス</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+            <div class="cooking-area" id="cooking-area">
+                <canvas id="cooking-canvas"></canvas>
+                <div class="instruction-bubble" id="instruction-bubble">
+                    <span id="instruction-text">たまごをタップしてわろう！</span>
+                </div>
+            </div>
+            <div class="tool-bar" id="tool-bar">
+                <!-- 道具がここに表示される -->
+            </div>
+        </div>
+
+        <!-- 完成画面 -->
+        <div id="complete-screen" class="screen">
+            <div class="complete-content">
+                <h2 class="complete-title">かんせい！</h2>
+                <div class="dish-display" id="dish-display">🍳</div>
+                <div class="star-rating" id="star-rating">
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                </div>
+                <div class="complete-message" id="complete-message">すごい！じょうずにできたね！</div>
+                <div class="complete-buttons">
+                    <button class="play-again-button" onclick="game.playAgain()">もういちど</button>
+                    <button class="menu-button" onclick="game.showScreen('menu-screen')">べつのりょうり</button>
+                </div>
+            </div>
+            <div class="confetti" id="confetti"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
