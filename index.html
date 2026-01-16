@@ -1,95 +1,308 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>わくわくキッチン！🍳 - キッズ料理ゲーム</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出退勤 打刻</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Noto Sans JP", system-ui, -apple-system, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f4f6fb;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+      margin-bottom: 16px;
+    }
+    .user-info {
+      display: grid;
+      gap: 8px;
+      font-size: 0.95rem;
+    }
+    .badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4338ca;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .status-item {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.9rem;
+    }
+    .status-item span {
+      display: block;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    button {
+      padding: 14px 16px;
+      font-size: 1rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    button:not(:disabled):active {
+      transform: scale(0.98);
+    }
+    .btn-in { background: #2563eb; color: #fff; }
+    .btn-out { background: #ef4444; color: #fff; }
+    .btn-break { background: #f59e0b; color: #fff; }
+    .btn-break-end { background: #10b981; color: #fff; }
+    label {
+      font-size: 0.9rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 10px;
+      font-size: 0.95rem;
+      resize: vertical;
+      margin-top: 6px;
+    }
+    .error {
+      color: #b91c1c;
+      background: #fee2e2;
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 12px;
+      display: none;
+    }
+    .loading {
+      font-size: 0.9rem;
+      color: #475569;
+      margin-top: 8px;
+    }
+    .on-break {
+      color: #dc2626;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- タイトル画面 -->
-        <div id="title-screen" class="screen active">
-            <div class="title-content">
-                <h1 class="game-title">
-                    <span class="title-char" style="--delay: 0">わ</span>
-                    <span class="title-char" style="--delay: 1">く</span>
-                    <span class="title-char" style="--delay: 2">わ</span>
-                    <span class="title-char" style="--delay: 3">く</span>
-                    <span class="title-char" style="--delay: 4">キ</span>
-                    <span class="title-char" style="--delay: 5">ッ</span>
-                    <span class="title-char" style="--delay: 6">チ</span>
-                    <span class="title-char" style="--delay: 7">ン</span>
-                    <span class="title-char" style="--delay: 8">！</span>
-                </h1>
-                <div class="chef-character" id="main-chef">
-                    <div class="chef-hat">👨‍🍳</div>
-                </div>
-                <button class="start-button" onclick="game.startGame()">
-                    <span>あそぶ！</span>
-                </button>
-                <div class="floating-foods">
-                    <span class="food-icon" style="--x: 10%; --y: 20%; --delay: 0">🍳</span>
-                    <span class="food-icon" style="--x: 85%; --y: 15%; --delay: 1">🥞</span>
-                    <span class="food-icon" style="--x: 15%; --y: 70%; --delay: 2">🍛</span>
-                    <span class="food-icon" style="--x: 80%; --y: 75%; --delay: 3">🍰</span>
-                    <span class="food-icon" style="--x: 50%; --y: 10%; --delay: 4">🍔</span>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <header>
+      <h1>出退勤 打刻</h1>
+      <div class="loading" id="loading">読み込み中...</div>
+    </header>
 
-        <!-- 料理選択画面 -->
-        <div id="menu-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-button" onclick="game.showScreen('title-screen')">←</button>
-                <h2>なにをつくる？</h2>
-                <div class="stars-display">⭐ <span id="total-stars">0</span></div>
-            </div>
-            <div class="recipe-grid" id="recipe-grid">
-                <!-- JavaScriptで動的に生成 -->
-            </div>
-        </div>
+    <section class="card" id="user-card">
+      <div class="user-info">
+        <div>氏名: <strong id="user-name">-</strong></div>
+        <div>職員番号: <strong id="user-staffid">-</strong></div>
+        <div>メール: <strong id="user-email">-</strong></div>
+        <div><span class="badge" id="user-role">USER</span></div>
+      </div>
+    </section>
 
-        <!-- 調理画面 -->
-        <div id="cooking-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-button" onclick="game.confirmExit()">←</button>
-                <h2 id="cooking-title">オムライス</h2>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-            </div>
-            <div class="cooking-area" id="cooking-area">
-                <canvas id="cooking-canvas"></canvas>
-                <div class="instruction-bubble" id="instruction-bubble">
-                    <span id="instruction-text">たまごをタップしてわろう！</span>
-                </div>
-            </div>
-            <div class="tool-bar" id="tool-bar">
-                <!-- 道具がここに表示される -->
-            </div>
-        </div>
+    <section class="card">
+      <h2>本日の状態</h2>
+      <div class="status-grid">
+        <div class="status-item">日付<span id="status-date">-</span></div>
+        <div class="status-item">最終打刻<span id="status-last">-</span></div>
+        <div class="status-item">出勤時刻<span id="status-in">-</span></div>
+        <div class="status-item">退勤時刻<span id="status-out">-</span></div>
+        <div class="status-item">休憩累計 (分)<span id="status-break">0</span></div>
+        <div class="status-item">勤務 (分)<span id="status-work">0</span></div>
+        <div class="status-item">休憩中<span id="status-on-break">-</span></div>
+      </div>
+    </section>
 
-        <!-- 完成画面 -->
-        <div id="complete-screen" class="screen">
-            <div class="complete-content">
-                <h2 class="complete-title">かんせい！</h2>
-                <div class="dish-display" id="dish-display">🍳</div>
-                <div class="star-rating" id="star-rating">
-                    <span class="star">⭐</span>
-                    <span class="star">⭐</span>
-                    <span class="star">⭐</span>
-                </div>
-                <div class="complete-message" id="complete-message">すごい！じょうずにできたね！</div>
-                <div class="complete-buttons">
-                    <button class="play-again-button" onclick="game.playAgain()">もういちど</button>
-                    <button class="menu-button" onclick="game.showScreen('menu-screen')">べつのりょうり</button>
-                </div>
-            </div>
-            <div class="confetti" id="confetti"></div>
-        </div>
-    </div>
+    <section class="card">
+      <h2>打刻</h2>
+      <div class="actions">
+        <button class="btn-in" id="btn-in">出勤 (IN)</button>
+        <button class="btn-out" id="btn-out">退勤 (OUT)</button>
+        <button class="btn-break" id="btn-break-start">休憩開始</button>
+        <button class="btn-break-end" id="btn-break-end">休憩終了</button>
+      </div>
+      <div style="margin-top: 16px;">
+        <label for="note">メモ（任意、200文字まで）</label>
+        <textarea id="note" maxlength="200" placeholder="備考があれば入力してください"></textarea>
+      </div>
+      <div class="error" id="error"></div>
+    </section>
+  </div>
 
-    <script src="game.js"></script>
+  <script>
+    const state = {
+      user: null,
+      today: null,
+      loading: false
+    };
+
+    const elements = {
+      loading: document.getElementById('loading'),
+      userName: document.getElementById('user-name'),
+      userStaffId: document.getElementById('user-staffid'),
+      userEmail: document.getElementById('user-email'),
+      userRole: document.getElementById('user-role'),
+      statusDate: document.getElementById('status-date'),
+      statusLast: document.getElementById('status-last'),
+      statusIn: document.getElementById('status-in'),
+      statusOut: document.getElementById('status-out'),
+      statusBreak: document.getElementById('status-break'),
+      statusWork: document.getElementById('status-work'),
+      statusOnBreak: document.getElementById('status-on-break'),
+      btnIn: document.getElementById('btn-in'),
+      btnOut: document.getElementById('btn-out'),
+      btnBreakStart: document.getElementById('btn-break-start'),
+      btnBreakEnd: document.getElementById('btn-break-end'),
+      note: document.getElementById('note'),
+      error: document.getElementById('error')
+    };
+
+    const setLoading = (loading) => {
+      state.loading = loading;
+      elements.loading.textContent = loading ? '通信中...' : '';
+      [
+        elements.btnIn,
+        elements.btnOut,
+        elements.btnBreakStart,
+        elements.btnBreakEnd
+      ].forEach((button) => {
+        button.disabled = loading;
+      });
+    };
+
+    const setError = (message) => {
+      if (!message) {
+        elements.error.style.display = 'none';
+        elements.error.textContent = '';
+        return;
+      }
+      elements.error.style.display = 'block';
+      elements.error.textContent = message;
+    };
+
+    const render = () => {
+      if (!state.user || !state.today) {
+        return;
+      }
+      elements.userName.textContent = state.user.name || '-';
+      elements.userStaffId.textContent = state.user.staffId || '-';
+      elements.userEmail.textContent = state.user.email || '-';
+      elements.userRole.textContent = state.user.role || 'USER';
+
+      elements.statusDate.textContent = state.today.date || '-';
+      elements.statusLast.textContent = state.today.lastTimestamp || '-';
+      elements.statusIn.textContent = state.today.inTime || '-';
+      elements.statusOut.textContent = state.today.outTime || '-';
+      elements.statusBreak.textContent = state.today.breakMinutes || 0;
+      elements.statusWork.textContent = state.today.workMinutes || 0;
+      elements.statusOnBreak.textContent = state.today.onBreak ? '休憩中' : 'なし';
+      elements.statusOnBreak.className = state.today.onBreak ? 'on-break' : '';
+
+      const canIn = !state.today.inTime && !state.today.outTime;
+      const canOut = state.today.inTime && !state.today.outTime && !state.today.onBreak;
+      const canBreakStart = state.today.inTime && !state.today.outTime && !state.today.onBreak;
+      const canBreakEnd = state.today.onBreak;
+
+      elements.btnIn.disabled = state.loading || !canIn;
+      elements.btnOut.disabled = state.loading || !canOut;
+      elements.btnBreakStart.disabled = state.loading || !canBreakStart;
+      elements.btnBreakEnd.disabled = state.loading || !canBreakEnd;
+    };
+
+    const handleBootstrap = (response) => {
+      if (!response || !response.ok) {
+        const message = response ? response.message : '不明なエラーが発生しました。';
+        setError(message);
+        setLoading(false);
+        return;
+      }
+      state.user = response.user;
+      state.today = response.today;
+      setError('');
+      setLoading(false);
+      render();
+    };
+
+    const handleClockSuccess = (response) => {
+      if (!response || !response.ok) {
+        setError('打刻に失敗しました。');
+        setLoading(false);
+        return;
+      }
+      state.today = response.today;
+      setError('');
+      setLoading(false);
+      render();
+    };
+
+    const handleClockFailure = (error) => {
+      setError(error && error.message ? error.message : '打刻に失敗しました。');
+      setLoading(false);
+      render();
+    };
+
+    const callClock = (action) => {
+      setLoading(true);
+      setError('');
+      const payload = {
+        note: elements.note.value || '',
+        userAgent: navigator.userAgent || ''
+      };
+      google.script.run
+        .withSuccessHandler(handleClockSuccess)
+        .withFailureHandler(handleClockFailure)
+        .api_clock(action, payload);
+    };
+
+    elements.btnIn.addEventListener('click', () => callClock('IN'));
+    elements.btnOut.addEventListener('click', () => callClock('OUT'));
+    elements.btnBreakStart.addEventListener('click', () => callClock('BREAK_START'));
+    elements.btnBreakEnd.addEventListener('click', () => callClock('BREAK_END'));
+
+    const bootstrap = () => {
+      setLoading(true);
+      google.script.run.withSuccessHandler(handleBootstrap).api_bootstrap();
+    };
+
+    bootstrap();
+  </script>
 </body>
 </html>
