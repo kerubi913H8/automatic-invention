@@ -1,95 +1,458 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>わくわくキッチン！🍳 - キッズ料理ゲーム</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>三者面談予約・確定・通知アプリ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
-    <div id="game-container">
-        <!-- タイトル画面 -->
-        <div id="title-screen" class="screen active">
-            <div class="title-content">
-                <h1 class="game-title">
-                    <span class="title-char" style="--delay: 0">わ</span>
-                    <span class="title-char" style="--delay: 1">く</span>
-                    <span class="title-char" style="--delay: 2">わ</span>
-                    <span class="title-char" style="--delay: 3">く</span>
-                    <span class="title-char" style="--delay: 4">キ</span>
-                    <span class="title-char" style="--delay: 5">ッ</span>
-                    <span class="title-char" style="--delay: 6">チ</span>
-                    <span class="title-char" style="--delay: 7">ン</span>
-                    <span class="title-char" style="--delay: 8">！</span>
-                </h1>
-                <div class="chef-character" id="main-chef">
-                    <div class="chef-hat">👨‍🍳</div>
-                </div>
-                <button class="start-button" onclick="game.startGame()">
-                    <span>あそぶ！</span>
-                </button>
-                <div class="floating-foods">
-                    <span class="food-icon" style="--x: 10%; --y: 20%; --delay: 0">🍳</span>
-                    <span class="food-icon" style="--x: 85%; --y: 15%; --delay: 1">🥞</span>
-                    <span class="food-icon" style="--x: 15%; --y: 70%; --delay: 2">🍛</span>
-                    <span class="food-icon" style="--x: 80%; --y: 75%; --delay: 3">🍰</span>
-                    <span class="food-icon" style="--x: 50%; --y: 10%; --delay: 4">🍔</span>
-                </div>
-            </div>
-        </div>
+<body class="bg-slate-100">
+  <div id="root"></div>
 
-        <!-- 料理選択画面 -->
-        <div id="menu-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-button" onclick="game.showScreen('title-screen')">←</button>
-                <h2>なにをつくる？</h2>
-                <div class="stars-display">⭐ <span id="total-stars">0</span></div>
-            </div>
-            <div class="recipe-grid" id="recipe-grid">
-                <!-- JavaScriptで動的に生成 -->
-            </div>
-        </div>
+  <script type="text/babel">
+    const STORAGE_KEY = 'conference_scheduler_v1';
 
-        <!-- 調理画面 -->
-        <div id="cooking-screen" class="screen">
-            <div class="screen-header">
-                <button class="back-button" onclick="game.confirmExit()">←</button>
-                <h2 id="cooking-title">オムライス</h2>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-            </div>
-            <div class="cooking-area" id="cooking-area">
-                <canvas id="cooking-canvas"></canvas>
-                <div class="instruction-bubble" id="instruction-bubble">
-                    <span id="instruction-text">たまごをタップしてわろう！</span>
-                </div>
-            </div>
-            <div class="tool-bar" id="tool-bar">
-                <!-- 道具がここに表示される -->
-            </div>
-        </div>
+    const emptyData = {
+      config: {
+        id: 'cfg-1',
+        className: '2年1組',
+        slotDuration: 15,
+        breakDuration: 0,
+        dates: [{ date: '', startTime: '13:00', endTime: '17:00' }],
+        submissionDeadline: '',
+        status: 'collecting',
+        location: '各教室'
+      },
+      students: [],
+      preferences: [],
+      assignments: []
+    };
 
-        <!-- 完成画面 -->
-        <div id="complete-screen" class="screen">
-            <div class="complete-content">
-                <h2 class="complete-title">かんせい！</h2>
-                <div class="dish-display" id="dish-display">🍳</div>
-                <div class="star-rating" id="star-rating">
-                    <span class="star">⭐</span>
-                    <span class="star">⭐</span>
-                    <span class="star">⭐</span>
-                </div>
-                <div class="complete-message" id="complete-message">すごい！じょうずにできたね！</div>
-                <div class="complete-buttons">
-                    <button class="play-again-button" onclick="game.playAgain()">もういちど</button>
-                    <button class="menu-button" onclick="game.showScreen('menu-screen')">べつのりょうり</button>
-                </div>
-            </div>
-            <div class="confetti" id="confetti"></div>
-        </div>
-    </div>
+    function loadData() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return emptyData;
+      try {
+        return { ...emptyData, ...JSON.parse(raw) };
+      } catch {
+        return emptyData;
+      }
+    }
 
-    <script src="game.js"></script>
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function toMinutes(t) {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function toTime(min) {
+      const h = String(Math.floor(min / 60)).padStart(2, '0');
+      const m = String(min % 60).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function generateSlots(config) {
+      const slots = [];
+      config.dates.forEach((d) => {
+        if (!d.date || !d.startTime || !d.endTime) return;
+        let cur = toMinutes(d.startTime);
+        const end = toMinutes(d.endTime);
+        while (cur + config.slotDuration <= end) {
+          const startTime = toTime(cur);
+          const endTime = toTime(cur + config.slotDuration);
+          slots.push({
+            slotId: `${d.date}_${startTime}`,
+            date: d.date,
+            startTime,
+            endTime
+          });
+          cur += config.slotDuration + config.breakDuration;
+        }
+      });
+      return slots;
+    }
+
+    function formatSlot(slot) {
+      return `${slot.date} ${slot.startTime}-${slot.endTime}`;
+    }
+
+    function runAutoMatch(data) {
+      const slots = generateSlots(data.config);
+      const prefMap = new Map(data.preferences.map((p) => [p.studentId, p]));
+      const assignedSlotIds = new Set();
+      const result = [];
+
+      const studentMap = new Map(data.students.map((s) => [s.id, s]));
+      const groups = {};
+      data.students.forEach((s) => {
+        const key = s.siblingGroup || `solo-${s.id}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(s.id);
+      });
+
+      Object.entries(groups)
+        .filter(([k, v]) => !k.startsWith('solo-') && v.length > 1)
+        .forEach(([_, members]) => {
+          const dayGroups = {};
+          slots.forEach((slot) => {
+            if (!dayGroups[slot.date]) dayGroups[slot.date] = [];
+            dayGroups[slot.date].push(slot);
+          });
+
+          let best = null;
+          Object.values(dayGroups).forEach((daySlots) => {
+            for (let i = 0; i <= daySlots.length - members.length; i++) {
+              const segment = daySlots.slice(i, i + members.length);
+              if (segment.some((s) => assignedSlotIds.has(s.slotId))) continue;
+
+              let score = 0;
+              let ok = true;
+              members.forEach((studentId, idx) => {
+                const pref = prefMap.get(studentId);
+                const found = pref?.choices.find((c) => c.slotId === segment[idx].slotId);
+                if (!found) ok = false;
+                score += found ? found.priority : 99;
+              });
+              if (ok && (!best || score < best.score)) {
+                best = { score, segment };
+              }
+            }
+          });
+
+          if (best) {
+            members.forEach((studentId, idx) => {
+              const slot = best.segment[idx];
+              assignedSlotIds.add(slot.slotId);
+              result.push({ studentId, ...slot, status: 'confirmed' });
+            });
+          }
+        });
+
+      const unassigned = data.students.filter((s) => !result.find((r) => r.studentId === s.id));
+      const sorted = unassigned.sort((a, b) => {
+        const al = prefMap.get(a.id)?.choices?.length || 99;
+        const bl = prefMap.get(b.id)?.choices?.length || 99;
+        return al - bl;
+      });
+
+      sorted.forEach((student) => {
+        const pref = prefMap.get(student.id);
+        let chosen = null;
+        if (pref) {
+          for (let p = 1; p <= 3; p++) {
+            const c = pref.choices.find((x) => x.priority === p);
+            if (c && !assignedSlotIds.has(c.slotId)) {
+              chosen = slots.find((s) => s.slotId === c.slotId);
+              if (chosen) break;
+            }
+          }
+        }
+        if (!chosen) {
+          chosen = slots.find((s) => !assignedSlotIds.has(s.slotId));
+        }
+        if (chosen) {
+          assignedSlotIds.add(chosen.slotId);
+          result.push({ studentId: student.id, ...chosen, status: 'confirmed' });
+        }
+      });
+
+      return result;
+    }
+
+    function App() {
+      const [hash, setHash] = React.useState(window.location.hash || '#teacher');
+      const [data, setData] = React.useState(loadData());
+      const [tab, setTab] = React.useState('setup');
+
+      React.useEffect(() => {
+        const onHash = () => setHash(window.location.hash || '#teacher');
+        window.addEventListener('hashchange', onHash);
+        return () => window.removeEventListener('hashchange', onHash);
+      }, []);
+
+      React.useEffect(() => {
+        saveData(data);
+      }, [data]);
+
+      const slots = generateSlots(data.config);
+
+      const updateConfig = (patch) => setData((d) => ({ ...d, config: { ...d.config, ...patch } }));
+
+      const teacher = (
+        <div className="max-w-6xl mx-auto p-4 space-y-4">
+          <header className="bg-white rounded-xl p-4 shadow">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800">三者面談予約・確定・通知アプリ（教師）</h1>
+                <p className="text-sm text-slate-600">URL共有: <span className="font-mono">#parent</span> を保護者に共有</p>
+              </div>
+              <div className="space-x-2">
+                <a className="px-3 py-2 rounded bg-indigo-100" href="#teacher">教師画面</a>
+                <a className="px-3 py-2 rounded bg-emerald-100" href="#parent">保護者画面</a>
+              </div>
+            </div>
+          </header>
+
+          <nav className="bg-white rounded-xl p-2 shadow flex flex-wrap gap-2">
+            {[
+              ['setup', '① 初期設定'],
+              ['roster', '② 名簿登録'],
+              ['submissions', '③ 提出状況'],
+              ['schedule', '④ スケジュール調整'],
+              ['notify', '⑤ 確定・通知']
+            ].map(([k, label]) => (
+              <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 rounded ${tab === k ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>{label}</button>
+            ))}
+          </nav>
+
+          {tab === 'setup' && (
+            <section className="bg-white rounded-xl p-4 shadow space-y-3">
+              <h2 className="font-bold text-lg">初期設定</h2>
+              <div className="grid md:grid-cols-3 gap-3">
+                <label>クラス名<input className="w-full border rounded p-2" value={data.config.className} onChange={(e) => updateConfig({ className: e.target.value })} /></label>
+                <label>1枠(分)<input type="number" className="w-full border rounded p-2" value={data.config.slotDuration} onChange={(e) => updateConfig({ slotDuration: Number(e.target.value) })} /></label>
+                <label>休憩(分)<input type="number" className="w-full border rounded p-2" value={data.config.breakDuration} onChange={(e) => updateConfig({ breakDuration: Number(e.target.value) })} /></label>
+                <label>提出締切<input type="datetime-local" className="w-full border rounded p-2" value={data.config.submissionDeadline} onChange={(e) => updateConfig({ submissionDeadline: e.target.value })} /></label>
+                <label>場所<input className="w-full border rounded p-2" value={data.config.location || ''} onChange={(e) => updateConfig({ location: e.target.value })} /></label>
+                <label>状態
+                  <select className="w-full border rounded p-2" value={data.config.status} onChange={(e) => updateConfig({ status: e.target.value })}>
+                    <option value="collecting">collecting</option>
+                    <option value="adjusting">adjusting</option>
+                    <option value="confirmed">confirmed</option>
+                  </select>
+                </label>
+              </div>
+
+              <div>
+                <h3 className="font-semibold">日程</h3>
+                {data.config.dates.map((d, i) => (
+                  <div key={i} className="grid md:grid-cols-4 gap-2 mt-2">
+                    <input type="date" className="border rounded p-2" value={d.date} onChange={(e) => {
+                      const next = [...data.config.dates]; next[i] = { ...next[i], date: e.target.value }; updateConfig({ dates: next });
+                    }} />
+                    <input type="time" className="border rounded p-2" value={d.startTime} onChange={(e) => {
+                      const next = [...data.config.dates]; next[i] = { ...next[i], startTime: e.target.value }; updateConfig({ dates: next });
+                    }} />
+                    <input type="time" className="border rounded p-2" value={d.endTime} onChange={(e) => {
+                      const next = [...data.config.dates]; next[i] = { ...next[i], endTime: e.target.value }; updateConfig({ dates: next });
+                    }} />
+                    <button className="bg-rose-100 rounded" onClick={() => updateConfig({ dates: data.config.dates.filter((_, idx) => idx !== i) })}>削除</button>
+                  </div>
+                ))}
+                {data.config.dates.length < 5 && <button className="mt-2 px-3 py-2 rounded bg-indigo-100" onClick={() => updateConfig({ dates: [...data.config.dates, { date: '', startTime: '13:00', endTime: '17:00' }] })}>日程追加</button>}
+              </div>
+              <p className="text-sm text-slate-600">生成スロット数: {slots.length}</p>
+            </section>
+          )}
+
+          {tab === 'roster' && <RosterPanel data={data} setData={setData} />}
+          {tab === 'submissions' && <SubmissionPanel data={data} slots={slots} />}
+          {tab === 'schedule' && <SchedulePanel data={data} setData={setData} slots={slots} />}
+          {tab === 'notify' && <NotifyPanel data={data} setData={setData} />}
+        </div>
+      );
+
+      const parent = <ParentPanel data={data} setData={setData} slots={slots} />;
+
+      return hash === '#parent' ? parent : teacher;
+    }
+
+    function RosterPanel({ data, setData }) {
+      const [line, setLine] = React.useState('');
+      const addStudent = () => {
+        const [studentName, parentName, email, siblingGroup] = line.split(',').map((x) => (x || '').trim());
+        if (!studentName) return;
+        setData((d) => ({ ...d, students: [...d.students, { id: crypto.randomUUID(), studentName, parentName, email, siblingGroup: siblingGroup || null }] }));
+        setLine('');
+      };
+      return (
+        <section className="bg-white rounded-xl p-4 shadow space-y-3">
+          <h2 className="font-bold text-lg">名簿登録</h2>
+          <p className="text-sm text-slate-600">形式: 生徒名,保護者名,メール,兄弟姉妹グループID(任意)</p>
+          <div className="flex gap-2">
+            <input className="flex-1 border rounded p-2" value={line} onChange={(e) => setLine(e.target.value)} />
+            <button className="px-3 py-2 rounded bg-indigo-600 text-white" onClick={addStudent}>追加</button>
+          </div>
+          <table className="w-full text-sm border">
+            <thead className="bg-slate-50"><tr><th>生徒</th><th>保護者</th><th>メール</th><th>兄弟姉妹</th><th></th></tr></thead>
+            <tbody>
+              {data.students.map((s) => (
+                <tr key={s.id} className="border-t"><td>{s.studentName}</td><td>{s.parentName}</td><td>{s.email}</td><td>{s.siblingGroup || '-'}</td><td><button className="text-rose-700" onClick={() => setData((d) => ({ ...d, students: d.students.filter((x) => x.id !== s.id), preferences: d.preferences.filter((p) => p.studentId !== s.id), assignments: d.assignments.filter((a) => a.studentId !== s.id) }))}>削除</button></td></tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      );
+    }
+
+    function SubmissionPanel({ data, slots }) {
+      const submitted = new Set(data.preferences.map((p) => p.studentId));
+      return (
+        <section className="bg-white rounded-xl p-4 shadow space-y-3">
+          <h2 className="font-bold text-lg">提出状況確認</h2>
+          <p>提出済み: {submitted.size} / {data.students.length}</p>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <h3 className="font-semibold">未提出</h3>
+              <ul className="list-disc ml-5">{data.students.filter((s) => !submitted.has(s.id)).map((s) => <li key={s.id}>{s.studentName} ({s.parentName})</li>)}</ul>
+            </div>
+            <div>
+              <h3 className="font-semibold">希望一覧</h3>
+              <ul className="space-y-2">
+                {data.preferences.map((p) => {
+                  const student = data.students.find((s) => s.id === p.studentId);
+                  return <li key={p.studentId} className="border rounded p-2"><b>{student?.studentName}</b>：{p.choices.sort((a,b)=>a.priority-b.priority).map((c) => {
+                    const slot = slots.find((s) => s.slotId === c.slotId);
+                    return slot ? `第${c.priority} ${formatSlot(slot)}` : null;
+                  }).filter(Boolean).join(' / ')}</li>;
+                })}
+              </ul>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function SchedulePanel({ data, setData, slots }) {
+      const assignmentMap = new Map(data.assignments.map((a) => [a.studentId, a]));
+      const run = () => setData((d) => ({ ...d, assignments: runAutoMatch(d), config: { ...d.config, status: 'adjusting' } }));
+      return (
+        <section className="bg-white rounded-xl p-4 shadow space-y-3">
+          <div className="flex justify-between">
+            <h2 className="font-bold text-lg">スケジュール調整</h2>
+            <button className="px-3 py-2 rounded bg-indigo-600 text-white" onClick={run}>自動マッチング実行</button>
+          </div>
+          <table className="w-full text-sm border">
+            <thead className="bg-slate-50"><tr><th>生徒</th><th>割当枠</th><th>手動調整</th></tr></thead>
+            <tbody>
+              {data.students.map((s) => (
+                <tr key={s.id} className="border-t">
+                  <td>{s.studentName}</td>
+                  <td>{assignmentMap.get(s.id) ? formatSlot(assignmentMap.get(s.id)) : '未割当'}</td>
+                  <td>
+                    <select className="border rounded p-1" value={assignmentMap.get(s.id)?.slotId || ''} onChange={(e) => setData((d) => {
+                      const slotId = e.target.value;
+                      const existing = d.assignments.filter((a) => a.studentId !== s.id && a.slotId !== slotId);
+                      const slot = slots.find((x) => x.slotId === slotId);
+                      if (!slot) return { ...d, assignments: existing };
+                      return { ...d, assignments: [...existing, { studentId: s.id, slotId: slot.slotId, date: slot.date, startTime: slot.startTime, endTime: slot.endTime, status: 'confirmed' }] };
+                    })}>
+                      <option value="">未割当</option>
+                      {slots.map((slot) => <option key={slot.slotId} value={slot.slotId}>{formatSlot(slot)}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      );
+    }
+
+    function NotifyPanel({ data, setData }) {
+      const students = new Map(data.students.map((s) => [s.id, s]));
+      const confirmAll = () => setData((d) => ({ ...d, config: { ...d.config, status: 'confirmed' }, assignments: d.assignments.map((a) => ({ ...a, status: 'confirmed' })) }));
+      return (
+        <section className="bg-white rounded-xl p-4 shadow space-y-3">
+          <div className="flex justify-between">
+            <h2 className="font-bold text-lg">確定・通知</h2>
+            <button className="px-3 py-2 rounded bg-emerald-600 text-white" onClick={confirmAll}>全件確定</button>
+          </div>
+          <div className="space-y-2">
+            {data.assignments.map((a) => {
+              const s = students.get(a.studentId);
+              const subject = encodeURIComponent(`三者面談の日程が確定しました【${data.config.className}】`);
+              const body = encodeURIComponent(`${s.parentName}様\n${s.studentName}さんの三者面談日程は ${a.date} ${a.startTime}-${a.endTime} です。\n場所: ${data.config.location}`);
+              return (
+                <div key={a.studentId} className="border rounded p-3 bg-slate-50">
+                  <div className="font-semibold">{s.studentName} / {s.parentName}</div>
+                  <div>{a.date} {a.startTime}-{a.endTime}</div>
+                  <div className="mt-2 flex gap-2">
+                    <a className="px-2 py-1 rounded bg-indigo-100" href={`mailto:${s.email}?subject=${subject}&body=${body}`}>メール通知</a>
+                    <button className="px-2 py-1 rounded bg-slate-200" onClick={() => {
+                      const w = window.open('', '_blank');
+                      w.document.write(`<html><body style="font-family:sans-serif;padding:24px"><h2>保護者様</h2><p>${s.parentName} 様</p><p>${s.studentName}さんの三者面談日程をお知らせします。</p><p><b>${a.date} ${a.startTime}-${a.endTime}</b></p><p>場所: ${data.config.location}</p><p>${data.config.className} 担任</p></body></html>`);
+                      w.document.close();
+                    }}>印刷用通知</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
+    function ParentPanel({ data, setData, slots }) {
+      const [studentId, setStudentId] = React.useState('');
+      const [choices, setChoices] = React.useState([]);
+      const [done, setDone] = React.useState(false);
+      const assignment = data.assignments.find((a) => a.studentId === studentId && data.config.status === 'confirmed');
+
+      const toggleChoice = (slotId) => {
+        setChoices((prev) => {
+          if (prev.includes(slotId)) return prev.filter((x) => x !== slotId);
+          if (prev.length >= 3) return prev;
+          return [...prev, slotId];
+        });
+      };
+
+      const submit = () => {
+        if (!studentId || choices.length === 0) return;
+        const payload = { studentId, submittedAt: new Date().toISOString(), choices: choices.map((slotId, i) => ({ slotId, priority: i + 1 })) };
+        setData((d) => ({ ...d, preferences: [...d.preferences.filter((p) => p.studentId !== studentId), payload] }));
+        setDone(true);
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto p-4 space-y-4">
+          <header className="bg-white rounded-xl p-4 shadow flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold">保護者向け 希望日時提出</h1>
+              <p className="text-sm text-slate-600">第1〜第3希望まで選択してください（最大3件）</p>
+            </div>
+            <a href="#teacher" className="px-3 py-2 rounded bg-indigo-100">教師画面へ</a>
+          </header>
+
+          <section className="bg-white rounded-xl p-4 shadow space-y-3">
+            <label className="block">生徒名
+              <select className="w-full border rounded p-2" value={studentId} onChange={(e) => { setStudentId(e.target.value); setDone(false); setChoices([]); }}>
+                <option value="">選択してください</option>
+                {data.students.map((s) => <option key={s.id} value={s.id}>{s.studentName}（{s.parentName}）</option>)}
+              </select>
+            </label>
+
+            {studentId && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-2 max-h-80 overflow-auto border rounded p-2">
+                  {slots.map((slot) => (
+                    <label key={slot.slotId} className="flex gap-2 items-center border rounded p-2">
+                      <input type="checkbox" checked={choices.includes(slot.slotId)} onChange={() => toggleChoice(slot.slotId)} />
+                      <span>{formatSlot(slot)}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-sm">選択順が優先順位になります: {choices.map((slotId, i) => {
+                  const s = slots.find((x) => x.slotId === slotId);
+                  return s ? `第${i+1}希望 ${formatSlot(s)}` : null;
+                }).filter(Boolean).join(' / ') || '未選択'}</p>
+                <button className="px-3 py-2 rounded bg-emerald-600 text-white" onClick={submit}>提出</button>
+              </>
+            )}
+
+            {done && <p className="text-emerald-700">提出完了しました。</p>}
+            {assignment && <p className="text-indigo-700 font-semibold">確定日時: {assignment.date} {assignment.startTime}-{assignment.endTime}</p>}
+          </section>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
