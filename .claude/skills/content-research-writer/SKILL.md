@@ -526,6 +526,38 @@ Recommended structure for writing projects:
 - Point out good matches: "That sounds like me!"
 - Flag mismatches: "Too formal for my style"
 
+## Word Document Output
+
+When the user asks to export or save the draft as a Word file (.docx), invoke the **docx skill** to generate the final document.
+
+### Workflow
+
+1. Ensure the draft is complete and polished in markdown
+2. Activate the `docx` skill to convert and format the document
+3. Apply these formatting conventions:
+   - Article title → Heading 1
+   - Section headings (`##`) → Heading 2
+   - Subsection headings (`###`) → Heading 3
+   - Tables, bullet lists, and bold text preserved as-is
+   - References section at the end with proper citation formatting
+
+### Example Handoff Prompt to docx Skill
+
+```
+Convert the following markdown article to a Word document (.docx).
+Use Heading 1 for the title, Heading 2 for ## sections,
+Heading 3 for ### subsections. Preserve all tables, lists,
+bold text, and the references section at the bottom.
+
+[paste final draft here]
+```
+
+### Output Naming Convention
+
+```
+article-title-final.docx
+```
+
 ## Related Use Cases
 
 - Creating social media posts from articles
