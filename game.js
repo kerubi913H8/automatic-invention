@@ -13,19 +13,20 @@ class WakuwakuKitchen {
         this.totalStars = parseInt(localStorage.getItem('wakuwaku_stars') || '0');
         this.unlockedRecipes = JSON.parse(localStorage.getItem('wakuwaku_unlocked') || '["omurice"]');
         this.recipeStars = JSON.parse(localStorage.getItem('wakuwaku_recipe_stars') || '{}');
+        this.albumItems = JSON.parse(localStorage.getItem('wakuwaku_album') || '[]');
 
         // 料理レシピデータ
         this.recipes = {
             omurice: {
-                name: 'オムライス',
+                name: 'オムレツ',
                 icon: '🍳',
                 color: '#FFD700',
                 steps: [
                     { type: 'tap', target: 'egg', instruction: 'たまごをタップしてわろう！', count: 3 },
                     { type: 'mix', target: 'bowl', instruction: 'たまごをまぜまぜしよう！', count: 10 },
-                    { type: 'drag', target: 'rice', instruction: 'ごはんをフライパンにいれよう！' },
-                    { type: 'tap', target: 'ketchup', instruction: 'ケチャップをかけよう！', count: 5 },
-                    { type: 'swipe', target: 'pan', instruction: 'たまごをやこう！スワイプしてね！', count: 3 },
+                    { type: 'drag', target: 'batter', instruction: 'たまごをフライパンにいれよう！' },
+                    { type: 'wait', target: 'cook', instruction: 'いいいろになったらタップ！', timing: true },
+                    { type: 'swipe', target: 'pan', instruction: 'スワイプしてまこう！', count: 3 },
                     { type: 'tap', target: 'plate', instruction: 'おさらにもりつけよう！', count: 1 },
                     { type: 'draw', target: 'ketchup_art', instruction: 'ケチャップでかおをかいてね！' }
                 ]
@@ -89,6 +90,21 @@ class WakuwakuKitchen {
                     { type: 'tap', target: 'strawberry', instruction: 'いちごをかざろう！', count: 8 },
                     { type: 'draw', target: 'decoration', instruction: 'すきなもようをかこう！' }
                 ]
+            },
+            cookie: {
+                name: 'デコクッキー',
+                icon: '🍪',
+                color: '#D2691E',
+                steps: [
+                    { type: 'tap', target: 'flour', instruction: 'こむぎこをいれよう！', count: 3 },
+                    { type: 'tap', target: 'butter', instruction: 'バターをいれよう！', count: 2 },
+                    { type: 'tap', target: 'sugar', instruction: 'おさとうもいれよう！', count: 2 },
+                    { type: 'mix', target: 'bowl', instruction: 'こねこねしよう！', count: 15 },
+                    { type: 'tap', target: 'shape', instruction: 'かたぬきしよう！', count: 5 },
+                    { type: 'wait', target: 'oven', instruction: 'オーブンでやこう！', timing: true },
+                    { type: 'tap', target: 'icing', instruction: 'アイシングをぬろう！', count: 5 },
+                    { type: 'draw', target: 'decoration', instruction: 'すきなもようをかこう！' }
+                ]
             }
         };
 
@@ -113,6 +129,50 @@ class WakuwakuKitchen {
         this.renderRecipeGrid();
         this.initCanvas();
         this.initTouchFeedback();
+        this.updateAlbumCount();
+    }
+
+    // ========== クッキーくまリアクション ==========
+    bearReact(type, message) {
+        const bear = document.getElementById('cookie-bear');
+        const expression = document.getElementById('bear-expression');
+        const speech = document.getElementById('bear-speech');
+
+        if (!bear || !expression || !speech) return;
+
+        const expressions = {
+            happy: '😊',
+            excited: '😄',
+            thinking: '🤔',
+            sparkle: '✨',
+            love: '😍',
+            cheer: '🎉'
+        };
+
+        expression.textContent = expressions[type] || '😊';
+        expression.style.animation = 'none';
+        setTimeout(() => { expression.style.animation = 'expressionPop 0.5s ease'; }, 10);
+
+        if (message) {
+            speech.textContent = message;
+            speech.classList.add('show');
+            setTimeout(() => {
+                speech.classList.remove('show');
+            }, 2000);
+        }
+    }
+
+    bearEncourage() {
+        const messages = [
+            'がんばって！',
+            'いいかんじ！',
+            'すごいね！',
+            'じょうずだね！',
+            'もうすこし！',
+            'できるよ！'
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+        this.bearReact('excited', randomMsg);
     }
 
     // ========== サウンドエフェクト ==========
@@ -138,7 +198,12 @@ class WakuwakuKitchen {
             cut: { freq: 1200, duration: 0.08, type: 'sawtooth' },
             complete: { freq: 523, duration: 0.5, type: 'sine', melody: [523, 659, 784, 1047] },
             star: { freq: 880, duration: 0.2, type: 'sine' },
-            pop: { freq: 400, duration: 0.15, type: 'square' }
+            pop: { freq: 400, duration: 0.15, type: 'square' },
+            crack: { freq: 1000, duration: 0.1, type: 'square' },
+            sizzle: { freq: 150, duration: 0.15, type: 'sawtooth' },
+            pour: { freq: 300, duration: 0.2, type: 'sine' },
+            yay: { freq: 659, duration: 0.3, type: 'sine', melody: [659, 784, 880] },
+            cheer: { freq: 784, duration: 0.25, type: 'sine', melody: [784, 880, 1047, 880] }
         };
 
         const sound = sounds[type] || sounds.tap;
@@ -174,6 +239,11 @@ class WakuwakuKitchen {
             screen.classList.remove('active');
         });
         document.getElementById(screenId).classList.add('active');
+
+        // アルバム画面を開いたときにレンダリング
+        if (screenId === 'album-screen') {
+            this.renderAlbum();
+        }
     }
 
     startGame() {
@@ -310,7 +380,17 @@ class WakuwakuKitchen {
     handleTap() {
         const step = this.currentRecipe.steps[this.currentStep];
         this.gameState.actionCount++;
-        this.playSound('tap');
+
+        // ターゲットに応じた効果音
+        const soundMap = {
+            egg: 'crack',
+            ketchup: 'pour',
+            sauce: 'pour',
+            flour: 'tap',
+            butter: 'tap'
+        };
+        this.playSound(soundMap[step.target] || 'tap');
+
         this.createEffect('tap');
         this.drawCookingScene();
 
@@ -342,7 +422,7 @@ class WakuwakuKitchen {
     handleDrag() {
         const dy = this.lastInputPos.y - this.dragStart.y;
         if (dy > 50) {
-            this.playSound('success');
+            this.playSound('pour');
             this.completeStep();
         }
         this.dragStart = null;
@@ -355,7 +435,15 @@ class WakuwakuKitchen {
 
         if (dx > 50 || dy > 50) {
             this.gameState.actionCount++;
-            this.playSound('cut');
+
+            // ターゲットに応じた効果音
+            const soundMap = {
+                pan: 'sizzle',
+                flip: 'sizzle',
+                cream: 'pour'
+            };
+            this.playSound(soundMap[step.target] || 'cut');
+
             this.createEffect('swipe');
             this.drawCookingScene();
 
@@ -450,6 +538,12 @@ class WakuwakuKitchen {
         this.playSound('success');
         this.currentStep++;
         this.createEffect('complete');
+        this.createEffect('burst');
+
+        // クッキーくまが応援
+        if (Math.random() > 0.5) {
+            this.bearEncourage();
+        }
 
         setTimeout(() => {
             this.startCookingStep();
@@ -495,6 +589,7 @@ class WakuwakuKitchen {
             case 'sauce':
             case 'topping':
             case 'strawberry':
+            case 'icing':
                 this.drawToppingScene(centerX, centerY, step.target, this.gameState.actionCount);
                 break;
             case 'pan':
@@ -512,6 +607,7 @@ class WakuwakuKitchen {
             case 'flour':
             case 'sugar':
             case 'milk':
+            case 'butter':
                 this.drawIngredient(centerX, centerY, step.target, this.gameState.actionCount);
                 break;
             case 'potato':
@@ -647,7 +743,8 @@ class WakuwakuKitchen {
             ketchup: '🍅',
             sauce: '🫗',
             topping: '🍓',
-            strawberry: '🍓'
+            strawberry: '🍓',
+            icing: '🎨'
         };
 
         // お皿と料理
@@ -748,7 +845,8 @@ class WakuwakuKitchen {
         const icons = {
             flour: '🌾',
             sugar: '🧂',
-            milk: '🥛'
+            milk: '🥛',
+            butter: '🧈'
         };
 
         // ボウル
@@ -909,6 +1007,35 @@ class WakuwakuKitchen {
             container.appendChild(effect);
             setTimeout(() => effect.remove(), 500);
         }
+
+        if (type === 'steam') {
+            const effect = document.createElement('div');
+            effect.className = 'steam';
+            effect.textContent = '💨';
+            effect.style.left = (this.lastInputPos?.x || 200) + 'px';
+            effect.style.top = (this.lastInputPos?.y || 200) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => effect.remove(), 2000);
+        }
+
+        if (type === 'heart') {
+            const effect = document.createElement('div');
+            effect.className = 'heart-effect';
+            effect.textContent = '💖';
+            effect.style.left = (this.lastInputPos?.x || 200) + 'px';
+            effect.style.top = (this.lastInputPos?.y || 200) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => effect.remove(), 1000);
+        }
+
+        if (type === 'burst') {
+            const effect = document.createElement('div');
+            effect.className = 'success-burst';
+            effect.style.left = (this.lastInputPos?.x - 50 || 150) + 'px';
+            effect.style.top = (this.lastInputPos?.y - 50 || 150) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => effect.remove(), 500);
+        }
     }
 
     // ========== 完成処理 ==========
@@ -938,7 +1065,8 @@ class WakuwakuKitchen {
             pancake: 3,
             curry: 6,
             hamburger: 9,
-            cake: 12
+            cake: 12,
+            cookie: 15
         };
 
         Object.entries(unlockConditions).forEach(([recipe, required]) => {
@@ -962,6 +1090,14 @@ class WakuwakuKitchen {
         };
         document.getElementById('complete-message').textContent = messages[stars];
 
+        // クッキーくまのリアクション
+        const bearReactions = {
+            3: 'さいこうにおいしい！✨',
+            2: 'おいしいね！😋',
+            1: 'もっとれんしゅうしよう！'
+        };
+        document.getElementById('bear-reaction-text').textContent = bearReactions[stars];
+
         // 星アニメーション
         const starElements = document.querySelectorAll('#star-rating .star');
         starElements.forEach((star, i) => {
@@ -982,6 +1118,9 @@ class WakuwakuKitchen {
 
         // 星表示更新
         this.updateStarsDisplay();
+
+        // アルバムに保存
+        this.saveToAlbum(stars);
     }
 
     createConfetti() {
@@ -1006,6 +1145,66 @@ class WakuwakuKitchen {
         if (display) {
             display.textContent = this.totalStars;
         }
+    }
+
+    // ========== アルバム機能 ==========
+    saveToAlbum(stars) {
+        const albumItem = {
+            id: Date.now(),
+            recipeId: this.currentRecipeId,
+            recipeName: this.currentRecipe.name,
+            icon: this.currentRecipe.icon,
+            stars: stars,
+            date: new Date().toLocaleDateString('ja-JP'),
+            timestamp: Date.now()
+        };
+
+        this.albumItems.unshift(albumItem);
+
+        // 最大50件まで保存
+        if (this.albumItems.length > 50) {
+            this.albumItems = this.albumItems.slice(0, 50);
+        }
+
+        localStorage.setItem('wakuwaku_album', JSON.stringify(this.albumItems));
+        this.updateAlbumCount();
+    }
+
+    updateAlbumCount() {
+        const count = document.getElementById('album-count');
+        if (count) {
+            count.textContent = this.albumItems.length;
+        }
+    }
+
+    renderAlbum() {
+        const grid = document.getElementById('album-grid');
+        grid.innerHTML = '';
+
+        if (this.albumItems.length === 0) {
+            grid.innerHTML = `
+                <div class="album-empty">
+                    <div class="album-empty-icon">📸</div>
+                    <div class="album-empty-text">アルバムはまだからっぽだよ</div>
+                    <div class="album-empty-hint">りょうりをつくってしゃしんをとろう！</div>
+                </div>
+            `;
+            return;
+        }
+
+        this.albumItems.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'album-item';
+            card.innerHTML = `
+                <div class="album-dish">${item.icon}</div>
+                <div class="album-recipe-name">${item.recipeName}</div>
+                <div class="album-stars">
+                    ${[1, 2, 3].map(i => i <= item.stars ? '⭐' : '☆').join('')}
+                </div>
+                <div class="album-date">${item.date}</div>
+            `;
+            grid.appendChild(card);
+        });
     }
 
     // ========== ゲーム制御 ==========
